@@ -1,4 +1,4 @@
-// app/api/ci-integrations/route.ts
+//a pi// app/api/ci-integrations/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
 import { X } from "lucide-react";
