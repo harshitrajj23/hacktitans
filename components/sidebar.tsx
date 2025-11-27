@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { LayoutDashboard, Zap, TestTube2, GitBranch, Settings, ChevronDown, LogOut } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
@@ -11,6 +12,7 @@ interface SidebarProps {
 
 export default function Sidebar({ activeNav, setActiveNav }: SidebarProps) {
   const [isExpanded, setIsExpanded] = useState(true)
+  const router = useRouter()
 
   // 🔹 Profile coming from API / Supabase
   const [profileName, setProfileName] = useState("Harshit Raj")
@@ -49,6 +51,19 @@ export default function Sidebar({ activeNav, setActiveNav }: SidebarProps) {
     .join("")
     .toUpperCase()
     .slice(0, 2)
+
+  const handleLogout = () => {
+    try {
+      if (typeof window !== "undefined") {
+        // 🔑 Same key we set in login page
+        localStorage.removeItem("apititan_user")
+      }
+    } catch (e) {
+      console.error("Failed to clear local storage", e)
+    }
+
+    router.push("/login")
+  }
 
   return (
     <aside
@@ -119,6 +134,7 @@ export default function Sidebar({ activeNav, setActiveNav }: SidebarProps) {
             </button>
           )}
           <button
+            onClick={handleLogout}
             className={`${
               isExpanded ? "flex-1" : "w-full"
             } text-xs px-3 py-2 rounded hover:bg-slate-800 text-slate-300 transition-colors flex items-center justify-center gap-2`}
