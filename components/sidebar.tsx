@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { LayoutDashboard, Zap, TestTube2, GitBranch, Settings, ChevronDown, LogOut } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
@@ -12,6 +12,29 @@ interface SidebarProps {
 export default function Sidebar({ activeNav, setActiveNav }: SidebarProps) {
   const [isExpanded, setIsExpanded] = useState(true)
 
+  // 🔹 Profile coming from API / Supabase
+  const [profileName, setProfileName] = useState("Harshit Raj")
+  const [profileEmail, setProfileEmail] = useState("harshit@bmsit.in")
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const res = await fetch("/api/profile")
+        if (!res.ok) return
+
+        const data = await res.json()
+        if (!data) return
+
+        setProfileName(data.name || "Harshit Raj")
+        setProfileEmail(data.email || "harshit@bmsit.in")
+      } catch (err) {
+        console.error("Failed to load profile for sidebar", err)
+      }
+    }
+
+    loadProfile()
+  }, [])
+
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "mock-apis", label: "Mock APIs", icon: Zap },
@@ -19,6 +42,13 @@ export default function Sidebar({ activeNav, setActiveNav }: SidebarProps) {
     { id: "ci-integration", label: "CI Integration", icon: GitBranch },
     { id: "settings", label: "Settings", icon: Settings },
   ]
+
+  const initials = profileName
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
 
   return (
     <aside
@@ -68,13 +98,13 @@ export default function Sidebar({ activeNav, setActiveNav }: SidebarProps) {
       <div className="p-4 border-t border-slate-800 space-y-3">
         <div className={`flex items-center gap-3 ${!isExpanded && "justify-center"}`}>
           <Avatar className="h-10 w-10">
-            <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" />
-            <AvatarFallback>AK</AvatarFallback>
+            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(profileName)}`} />
+            <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           {isExpanded && (
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-white truncate">Harshit Raj</div>
-              <div className="text-xs text-slate-400 truncate">harshit@bmsit.in</div>
+              <div className="text-sm font-medium text-white truncate">{profileName}</div>
+              <div className="text-xs text-slate-400 truncate">{profileEmail}</div>
             </div>
           )}
         </div>
