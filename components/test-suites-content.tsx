@@ -419,13 +419,37 @@ function CIIntegrationPanel() {
   const [copiedWebhook, setCopiedWebhook] = useState<string | number | null>(null)
 
   const handleConnect = async (id: number) => {
-    setConnectingId(id)
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+  try {
+    setConnectingId(id);
+
+    const integration = integrations.find((int) => int.id === id);
+    if (!integration) return;
+
+    // hit dummy backend so CI connections are stored in Supabase
+    await fetch("/api/ci-integrations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        provider: integration.name,
+        status: "connected",
+        webhookUrl: integration.webhook || null,
+      }),
+    });
+
+    // update local UI
     setIntegrations((prev) =>
-      prev.map((int) => (int.id === id ? { ...int, status: "connected", lastSync: "just now" } : int)),
-    )
-    setConnectingId(null)
+      prev.map((int) =>
+        int.id === id
+          ? { ...int, status: "connected", lastSync: "just now" }
+          : int
+      )
+    );
+  } catch (err) {
+    console.error("Failed to connect CI integration", err);
+  } finally {
+    setConnectingId(null);
   }
+};
 
   const handleCopyWebhook = (webhook: string, id: string | number) => {
     navigator.clipboard.writeText(webhook)
