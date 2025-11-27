@@ -1,30 +1,177 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Play, CheckCircle, AlertCircle, ChevronDown, Loader2, Plus, Copy } from "lucide-react"
 
+// 👇 use your real project id (from the JSON you pasted)
+const DEFAULT_PROJECT_ID = "5ee437a1-d48c-4d85-bafa-f0cda9302aff"
+
 export default function TestSuitesContent() {
   const [activeTab, setActiveTab] = useState("suites")
-  const [selectedSuite, setSelectedSuite] = useState(null)
-  const [expandedSuite, setExpandedSuite] = useState(null)
+  const [selectedSuite, setSelectedSuite] = useState<number | string | null>(null)
   const [isRunning, setIsRunning] = useState(false)
-  const [testCases, setTestCases] = useState([
+  const [loadingSuites, setLoadingSuites] = useState(false)
+  const [creatingSuite, setCreatingSuite] = useState(false)
+
+  const [testCases] = useState([
     { id: 1, method: "GET", endpoint: "/users", status: 200, expected: '{"users": []}' },
     { id: 2, method: "POST", endpoint: "/users", status: 201, expected: '{"id": 1, "created": true}' },
   ])
 
-  const suites = [
-    { id: 1, name: "Authentication Flow", tests: 12, passed: 12, failed: 0, lastRun: "2 hours ago", status: "pass" },
-    { id: 2, name: "Payment Processing", tests: 8, passed: 7, failed: 1, lastRun: "5 hours ago", status: "fail" },
-    { id: 3, name: "User Management", tests: 15, passed: 15, failed: 0, lastRun: "1 hour ago", status: "pass" },
-  ]
+  const [suites, setSuites] = useState<
+    {
+      id: string | number
+      name: string
+      tests: number
+      passed: number
+      failed: number
+      lastRun: string
+      status: string
+    }[]
+  >([
+    // fallback demo data until real data loads
+    {
+      id: 1,
+      name: "Authentication Flow",
+      tests: 12,
+      passed: 12,
+      failed: 0,
+      lastRun: "2 hours ago",
+      status: "pass",
+    },
+    {
+      id: 2,
+      name: "Payment Processing",
+      tests: 8,
+      passed: 7,
+      failed: 1,
+      lastRun: "5 hours ago",
+      status: "fail",
+    },
+    {
+      id: 3,
+      name: "User Management",
+      tests: 15,
+      passed: 15,
+      failed: 0,
+      lastRun: "1 hour ago",
+      status: "pass",
+    },
+  ])
 
-  const handleRunTest = async (suiteId) => {
-    setIsRunning(true)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsRunning(false)
+  // 🔹 Load suites from backend
+  useEffect(() => {
+    async function loadSuites() {
+      try {
+        setLoadingSuites(true)
+        const res = await fetch(`/api/test-suites?projectId=${DEFAULT_PROJECT_ID}`)
+        if (!res.ok) {
+          console.error("Failed to load suites")
+          setLoadingSuites(false)
+          return
+        }
+        const rows = await res.json() // array from Supabase
+        const mapped = rows.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          tests: 0,
+          passed: 0,
+          failed: 0,
+          lastRun: row.last_run_at ? new Date(row.last_run_at).toLocaleString() : "Never run",
+          status: row.status || "never_run",
+        }))
+        if (mapped.length > 0) {
+          setSuites(mapped)
+        }
+      } catch (err) {
+        console.error("Error loading suites", err)
+      } finally {
+        setLoadingSuites(false)
+      }
+    }
+
+    loadSuites()
+  }, [])
+
+  const handleRunTest = async (suiteId: string | number) => {
+  try {
+    setIsRunning(true);
+
+    const res = await fetch("/api/test-suites/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: suiteId }),
+    });
+
+    if (!res.ok) {
+      console.error("Failed to run test suite");
+      setIsRunning(false);
+      return;
+    }
+
+    const updated = await res.json();
+
+    // update UI with new status + last_run_at
+    setSuites((prev) =>
+      prev.map((suite) =>
+        suite.id === updated.id
+          ? {
+              ...suite,
+              status: updated.status || "pass",
+              lastRun: updated.last_run_at
+                ? new Date(updated.last_run_at).toLocaleString()
+                : suite.lastRun,
+            }
+          : suite
+      )
+    );
+  } catch (err) {
+    console.error("Error running test suite", err);
+  } finally {
+    setIsRunning(false);
+  }
+};
+
+
+  // 🔹 Create new test suite via backend
+  const handleCreateSuite = async () => {
+    try {
+      setCreatingSuite(true)
+      const res = await fetch("/api/test-suites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: DEFAULT_PROJECT_ID,
+          name: `Suite - ${new Date().toLocaleTimeString()}`,
+          description: "Created from UI",
+        }),
+      })
+
+      if (!res.ok) {
+        console.error("Failed to create test suite")
+        setCreatingSuite(false)
+        return
+      }
+
+      const row = await res.json()
+      const newSuite = {
+        id: row.id,
+        name: row.name,
+        tests: 0,
+        passed: 0,
+        failed: 0,
+        lastRun: "Never run",
+        status: row.status || "never_run",
+      }
+
+      setSuites((prev) => [newSuite, ...prev])
+    } catch (err) {
+      console.error("Error creating suite", err)
+    } finally {
+      setCreatingSuite(false)
+    }
   }
 
   return (
@@ -58,10 +205,33 @@ export default function TestSuitesContent() {
       {/* Test Suites Tab */}
       {activeTab === "suites" && (
         <div className="space-y-6">
-          <div className="flex justify-end">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 transition-all duration-200 hover:shadow-lg">
-              <Plus className="w-4 h-4" />
-              Create Test Suite
+          <div className="flex justify-between items-center">
+            {loadingSuites ? (
+              <span className="text-xs text-gray-500 flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" /> Loading suites from Supabase...
+              </span>
+            ) : (
+              <span className="text-xs text-gray-500">
+                {suites.length} suite{SuitesPlural(suites.length)} loaded
+              </span>
+            )}
+
+            <Button
+              onClick={handleCreateSuite}
+              disabled={creatingSuite}
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-2 transition-all duration-200 hover:shadow-lg"
+            >
+              {creatingSuite ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Create Test Suite
+                </>
+              )}
             </Button>
           </div>
 
@@ -87,10 +257,16 @@ export default function TestSuitesContent() {
                       <div className="flex items-center gap-3">
                         <span
                           className={`px-3 py-1 text-xs font-semibold rounded-full transition-all duration-200 ${
-                            suite.status === "pass" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                            suite.status === "pass"
+                              ? "bg-green-100 text-green-700"
+                              : suite.status === "fail"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-yellow-100 text-yellow-700"
                           }`}
                         >
-                          {suite.passed}/{suite.tests} passed
+                          {suite.status === "never_run"
+                            ? "Not run yet"
+                            : `${suite.passed}/${suite.tests} passed`}
                         </span>
                         <span className="text-sm text-gray-500">{suite.lastRun}</span>
                       </div>
@@ -161,15 +337,23 @@ export default function TestSuitesContent() {
                   <div className="mt-1 p-4 bg-gray-50 rounded-lg flex items-center justify-between hover:bg-gray-100 transition-colors duration-200">
                     <div className="flex items-center gap-4">
                       <div className="flex gap-2">
-                        <span className="text-sm text-green-600 flex items-center gap-1 font-medium">
-                          <CheckCircle className="w-4 h-4" />
-                          {suite.passed} passed
-                        </span>
-                        {suite.failed > 0 && (
-                          <span className="text-sm text-red-600 flex items-center gap-1 font-medium">
-                            <AlertCircle className="w-4 h-4" />
-                            {suite.failed} failed
+                        {suite.status === "never_run" ? (
+                          <span className="text-sm text-gray-600 flex items-center gap-1 font-medium">
+                            Not run yet
                           </span>
+                        ) : (
+                          <>
+                            <span className="text-sm text-green-600 flex items-center gap-1 font-medium">
+                              <CheckCircle className="w-4 h-4" />
+                              {suite.passed} passed
+                            </span>
+                            {suite.failed > 0 && (
+                              <span className="text-sm text-red-600 flex items-center gap-1 font-medium">
+                                <AlertCircle className="w-4 h-4" />
+                                {suite.failed} failed
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -204,6 +388,11 @@ export default function TestSuitesContent() {
   )
 }
 
+function SuitesPlural(count: number) {
+  return count === 1 ? "" : "s"
+}
+
+// CIIntegrationPanel stays the same as before
 function CIIntegrationPanel() {
   const [integrations, setIntegrations] = useState([
     {
@@ -226,19 +415,19 @@ function CIIntegrationPanel() {
     { id: 4, name: "CircleCI", icon: "◯", status: "pending", lastSync: "Syncing...", webhook: null },
   ])
 
-  const [connectingId, setConnectingId] = useState(null)
-  const [copiedWebhook, setCopiedWebhook] = useState(null)
+  const [connectingId, setConnectingId] = useState<number | null>(null)
+  const [copiedWebhook, setCopiedWebhook] = useState<string | number | null>(null)
 
-  const handleConnect = async (id) => {
+  const handleConnect = async (id: number) => {
     setConnectingId(id)
     await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIntegrations(
-      integrations.map((int) => (int.id === id ? { ...int, status: "connected", lastSync: "just now" } : int)),
+    setIntegrations((prev) =>
+      prev.map((int) => (int.id === id ? { ...int, status: "connected", lastSync: "just now" } : int)),
     )
     setConnectingId(null)
   }
 
-  const handleCopyWebhook = (webhook, id) => {
+  const handleCopyWebhook = (webhook: string, id: string | number) => {
     navigator.clipboard.writeText(webhook)
     setCopiedWebhook(id)
     setTimeout(() => setCopiedWebhook(null), 2000)
@@ -341,7 +530,7 @@ function CIIntegrationPanel() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleCopyWebhook(integration.webhook, integration.id)}
+                        onClick={() => handleCopyWebhook(integration.webhook!, integration.id)}
                         className="px-2 h-8"
                       >
                         <Copy className="w-3 h-3" />
@@ -378,56 +567,6 @@ function CIIntegrationPanel() {
           ))}
         </div>
       </div>
-
-      {/* Pipeline Status Monitor */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span>📊 Pipeline Status Monitor</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[
-              { pipeline: "Main Branch Tests", status: "success", duration: "2m 34s" },
-              { pipeline: "PR #243 Tests", status: "running", duration: "1m 12s" },
-              { pipeline: "Release Tests", status: "failed", duration: "5m 08s" },
-            ].map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-              >
-                <div className="flex items-center gap-3 flex-1">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      item.status === "success"
-                        ? "bg-green-500"
-                        : item.status === "running"
-                          ? "bg-blue-500 animate-pulse"
-                          : "bg-red-500"
-                    }`}
-                  />
-                  <span className="text-sm font-medium text-gray-900">{item.pipeline}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-gray-500">{item.duration}</span>
-                  <span
-                    className={`px-2 py-1 text-xs font-semibold rounded transition-all duration-200 ${
-                      item.status === "success"
-                        ? "bg-green-100 text-green-700"
-                        : item.status === "running"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {item.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
