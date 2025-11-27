@@ -103,11 +103,52 @@ export default function DashboardContent() {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 p-8 text-white shadow-lg">
-        <h1 className="text-4xl font-bold mb-2">Welcome to API TITAN</h1>
-        <p className="text-blue-100 text-lg">Your intelligent API mocking and testing platform</p>
+      {/* Fancy hero banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-950 via-blue-800 to-cyan-500 p-8 text-white shadow-2xl border border-white/10">
+        {/* glow blobs */}
+        <div className="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full bg-cyan-400/30 blur-3xl" />
+        <div className="pointer-events-none absolute -right-10 -bottom-16 h-48 w-48 rounded-full bg-indigo-500/30 blur-3xl" />
+
+        <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-black/30 px-3 py-1 text-xs font-medium text-cyan-100 border border-white/10 mb-3">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              Live mock workspace · Hackathon build
+            </div>
+            <h1 className="text-3xl md:text-4xl font-semibold md:font-bold tracking-tight mb-2">
+              Welcome to <span className="text-cyan-300">API TITAN</span>
+            </h1>
+            <p className="text-sm md:text-base text-slate-100/85 max-w-xl">
+              Spin up mock APIs, group them into test suites, and connect CI — all from a single
+              dashboard designed for fast hackathon teams.
+            </p>
+          </div>
+
+          <div className="mt-2 md:mt-0 flex flex-col items-start md:items-end gap-3">
+            <div className="rounded-xl bg-black/30 px-4 py-3 border border-white/10 backdrop-blur-sm min-w-[230px]">
+              <p className="text-[11px] uppercase tracking-wide text-slate-200/80">
+                Today&apos;s snapshot
+              </p>
+              <p className="text-lg font-semibold mt-1">Mock APIs are healthy ✅</p>
+              <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-slate-100/80">
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+                  98.5% success rate
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-2 w-2 rounded-full bg-blue-300" />
+                  12 active test suites
+                </span>
+              </div>
+            </div>
+            <span className="text-[11px] text-slate-100/70">
+              Built with Next.js · Supabase · v0 · For API-first teams
+            </span>
+          </div>
+        </div>
       </div>
 
+      {/* Metrics cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {metrics.map((metric) => {
           const Icon = metric.icon;
@@ -118,17 +159,22 @@ export default function DashboardContent() {
           return (
             <Card
               key={metric.title}
-              className="relative overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-white border-gray-200 group"
+              className="relative overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white border-gray-200 group"
             >
               <div
                 className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${metric.color} opacity-10 rounded-full -mr-12 -mt-12 group-hover:opacity-20 transition-opacity duration-300`}
               />
               <CardHeader className="pb-3 relative z-10">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-gray-600">
-                    {metric.title}
-                  </CardTitle>
-                  <div className={`p-2 rounded-lg bg-gradient-to-br ${metric.color}`}>
+                  <div className="flex flex-col gap-1">
+                    <CardTitle className="text-sm font-medium text-gray-600">
+                      {metric.title}
+                    </CardTitle>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">
+                      Realtime metric
+                    </span>
+                  </div>
+                  <div className={`p-2 rounded-lg bg-gradient-to-br ${metric.color} shadow-sm`}>
                     <Icon className="w-5 h-5 text-white" />
                   </div>
                 </div>
@@ -160,6 +206,7 @@ export default function DashboardContent() {
         })}
       </div>
 
+      {/* Quick actions */}
       <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700 text-white">
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
@@ -197,6 +244,7 @@ export default function DashboardContent() {
         </CardContent>
       </Card>
 
+      {/* Usage + recent activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-white border-gray-200 hover:shadow-lg transition-shadow duration-300">
           <CardHeader>
