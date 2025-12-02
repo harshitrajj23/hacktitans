@@ -1,4 +1,4 @@
-//a p  i// app/api/ci-integrations/route.ts
+//a p  i// app/api/ci-integration s/ronWKJSEFJKASDVKUJSDFVBCAKDSJute.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
 import { X } from "lucide-react";
