@@ -1,8 +1,5 @@
-//a p  i// app/api/ci-integration s/ronWKJSEFJKASDVKUJSDFVBCAKDSJute.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
-import { X } from "lucide-react";
-import { XAxis } from "recharts";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +13,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // dummy but stored in DB
     const { data, error } = await supabase
       .from("ci_integrations")
       .insert({
@@ -28,17 +24,15 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    if (error || !data) {
-      console.error("Error inserting CI integration", error);
+    if (error) {
       return NextResponse.json(
-        { error: error?.message ?? "Failed to save CI integration" },
+        { error: error.message },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(data);
   } catch (err) {
-    console.error("Unexpected error in CI route", err);
     return NextResponse.json(
       { error: "Invalid request" },
       { status: 400 }
